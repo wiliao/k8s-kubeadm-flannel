@@ -50,7 +50,7 @@ sudo rm -rf ~/.kube
 
 ## 5. Create a single-host Kubernetes cluster with kubeadm
 
-sudo kubeadm init --pod-network-cidr=192.168.0.0/16
+sudo kubeadm init --apiserver-advertise-address=10.0.0.10 --pod-network-cidr=192.168.0.0/16
 
 mkdir -p $HOME/.kube
 
@@ -82,9 +82,41 @@ kubectl taint nodes --all node-role.kubernetes.io/master-
 
 kubectl get nodes -o wide
 
-![screen-shot-k8s-calico-pods](screen-shot/taint-node.png)
+![screen-shot-k8s-taint-node](screen-shot/taint-node.png)
 
-### For TLS certificate errors, overwrite the existing kubeconfig for the "admin" user:
+
+## 7. Joining worker node
+
+After initializing control plane, it would show the following statement with actual values:
+
+sudo kubeadm join < control-plane-host >:< control-plane-port > --token < token >  --discovery-token-ca-cert-hash sha256:< hash >
+
+For example,
+
+kubeadm join 10.0.0.10:6443 --token w0ogsf.f19yfw83v0py0uav \
+--discovery-token-ca-cert-hash sha256:61b25f8e9f5f194b1a53c467e1e4f11f8cd417950442de11b703bd95e9b2cecb
+
+## 8. Troubleshooting
+
+### (1). Cann't join node
+
+[preflight] Running pre-flight checks
+error execution phase preflight: couldn't validate the identity of the API Server: Get "https://10.0.0.10:6443/api/v1/namespaces/kube-public/configmaps/cluster-info?timeout=10s": net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers)
+To see the stack trace of this error execute with --v=5 or higher
+
+Resovled by enabling port 6443:
+
+![screen-shot-k8s-enable-port-6443](screen-shot/enable-6443-control-plain.png)
+
+![screen-shot-k8s-port-6443-status](screen-shot/port-6443-status.png)
+
+After that, the node was joined successfully.
+
+![screen-shot-k8s-port-6443-status](screen-shot/join-node-ok.png)
+
+![screen-shot-k8s-two-nodes-cluster](screen-shot/two-nodes-cluster.png)
+
+### (2). For TLS certificate errors, overwrite the existing kubeconfig for the "admin" user:
 
 mv  $HOME/.kube $HOME/.kube.bak
 
@@ -93,3 +125,15 @@ mkdir $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+### (3). Can't enable Calico
+
+Unable to connect to the server: tls: failed to verify certificate: x509: certificate signed by unknown authority (possibly because of "crypto/rsa: verification error" while trying to verify candidate authority certificate "kubernetes")
+
+see (2)
+
+## 9. References
+
+https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/
+
+https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/
