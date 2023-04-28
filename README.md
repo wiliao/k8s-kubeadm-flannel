@@ -132,6 +132,19 @@ Unable to connect to the server: tls: failed to verify certificate: x509: certif
 
 see (2)
 
+### (4). kubectl not working on worker node
+
+kubectl get pods
+E0427 22:03:20.933445   98616 memcache.go:265] couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s": dial tcp 127.0.0.1:8080: connect: connection refused
+
+&nbsp;
+
+Kubcetl is by default configured and working on the master. It requires a kube-apiserver pod and ~/.kube/config.
+
+For worker nodes, we don’t need to install kube-apiserver but need to copy the ~/.kube/config file from the master node to the ~/.kube/config on the worker node so that it can call kube-apiserver at https://10.0.0.10:6443.
+
+&nbsp;
+
 ## 9. References
 
 https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/
