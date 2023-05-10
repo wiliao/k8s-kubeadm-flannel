@@ -1,5 +1,5 @@
-# k8s-kubeadm-calico
-Installing and configuring kubernetes clusters on ubuntu using kubeadm, calico, etc.
+# k8s-kubeadm-flannel
+Installing and configuring kubernetes clusters on ubuntu using kubeadm, flannel, etc.
 
 ## 1. Check ubuntu version
 
@@ -48,9 +48,12 @@ Restart machine after executing the above commands.
 
     sudo rm -rf ~/.kube
 
-## 5. Create a single-host Kubernetes cluster with kubeadm
+## 5. Create a single-host Kubernetes cluster with kubeadm (to use default pod network ip range for flannel: podCIDR=10.244.0.0/16)
 
-    sudo kubeadm init --apiserver-advertise-address=10.0.0.10 --pod-network-cidr=192.168.0.0/16
+Note: The --pod-network-cidr=10.244.0.0/16 option is a requirement for Flannel - don't change that network address!
+
+
+    sudo kubeadm init --apiserver-advertise-address=10.0.0.230 --pod-network-cidr=10.244.0.0/16
 
     mkdir -p $HOME/.kube
 
@@ -58,21 +61,29 @@ Restart machine after executing the above commands.
 
     sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-## 6. Install Calico
+## 6. Install Flannel
 
-### (1). Install the Tigera Calico operator and custom resource definitions.
+### (1). For Kubernetes v1.17+, deploying Flannel with kubectl
+If you use custom podCIDR (not 10.244.0.0/16), you first need to download the following manifest and modify the network to match your one.
 
-    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.1/manifests/tigera-operator.yaml
+    kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
 
-### (2). Install Calico by creating the necessary custom resource.
+### (2). Enable these ports in firewall
 
-    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.1/manifests/custom-resources.yaml
+    sudo ufw allow 6443
+    sudo ufw allow 6443/tcp
+
+    sudo ufw allow 10250
+    sudo ufw allow 10250/tcp
+
+![screen-shot-k8s-ssh-pod-on-worker-node](screen-shot/enable-10250-on-worker-node.png)
+
 
 ### (3). Confirm that all of the pods are running with the following command
 
-    watch kubectl get pods -n calico-system
+![screen-shot-k8s-flannel-pods](screen-shot/flannel-two-nodes.png)
 
-![screen-shot-k8s-calico-pods](screen-shot/calico-pods.png)
+
 
 ### (4). Remove the taints on the control plane so that you can schedule pods on it.
 
@@ -82,8 +93,9 @@ Restart machine after executing the above commands.
 
     kubectl get nodes -o wide
 
-![screen-shot-k8s-taint-node](screen-shot/taint-node.png)
+![screen-shot-k8s-taint-node](screen-shot/untaint-control-plane.png)
 
+![screen-shot-k8s-pods-on-master](screen-shot/pods-on-control-plane.png)
 
 ## 7. Joining worker node
 
@@ -93,10 +105,32 @@ After initializing control plane, it would show the following statement with act
 
 For example,
 
-    kubeadm join 10.0.0.10:6443 --token w0ogsf.f19yfw83v0py0uav \
-    --discovery-token-ca-cert-hash sha256:61b25f8e9f5f194b1a53c467e1e4f11f8cd417950442de11b703bd95e9b2cecb
+![screen-shot-k8s-calico-pods](screen-shot/flannel-join-node.png)
 
-## 8. Troubleshooting
+## 8. Installing Metrics Server using Helm charts
+
+(1). Installing Helm
+
+    curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+    sudo apt-get install apt-transport-https --yes
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+    sudo apt-get update
+    sudo apt-get install helm
+
+(2). Add the Metrics Server Helm charts repo to Helm and then install
+
+    kubectl create ns metrics-server
+    kubectl config set-context $(kubectl config current-context) --namespace=metrics-server
+    helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
+    helm upgrade
+    helm show values metrics-server/metrics-server > ~/metrics-server.values
+    helm install metrics-server metrics-server/metrics-server -n  metrics-server --values ~/metrics-server.values
+    helm ls -n metrics-server
+    
+
+![screen-shot-k8s-taint-node](screen-shot/helm-metrics-server.png)
+
+## 9. Troubleshooting
 
 ### (1). Cann't join node
 
@@ -104,17 +138,13 @@ For example,
 error execution phase preflight: couldn't validate the identity of the API Server: Get "https://10.0.0.10:6443/api/v1/namespaces/kube-public/configmaps/cluster-info?timeout=10s": net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers)
 To see the stack trace of this error execute with --v=5 or higher
 
-Resovled by enabling port 6443 on control plane ( linux-02 ):
+Resovled by enabling port 6443 on both nodes:
 
 ![screen-shot-k8s-enable-port-6443](screen-shot/enable-6443-control-plane.png)
 
 ![screen-shot-k8s-port-6443-status](screen-shot/port-6443-status.png)
 
-After that, another node ( linux-01 ) was joined successfully.
-
-![screen-shot-k8s-port-6443-status](screen-shot/join-node-ok.png)
-
-![screen-shot-k8s-two-nodes-cluster](screen-shot/two-nodes-cluster.png)
+After that, another node ( linux-02 ) was joined successfully.
 
 ### (2). For TLS certificate errors, overwrite the existing kubeconfig for the "admin" user:
 
@@ -126,13 +156,7 @@ After that, another node ( linux-01 ) was joined successfully.
 
     sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-### (3). Can't enable Calico
-
-Unable to connect to the server: tls: failed to verify certificate: x509: certificate signed by unknown authority (possibly because of "crypto/rsa: verification error" while trying to verify candidate authority certificate "kubernetes")
-
-see (2)
-
-### (4). kubectl not working on worker node
+### (3). kubectl not working on worker node
 
 kubectl get pods
 E0427 22:03:20.933445   98616 memcache.go:265] couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s": dial tcp 127.0.0.1:8080: connect: connection refused
@@ -145,8 +169,12 @@ For worker nodes, we don’t need to install kube-apiserver but need to copy the
 
 &nbsp;
 
-## 9. References
+## 10. References
 
 https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/
 
 https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/
+
+https://helm.sh/docs/intro/install/
+
+https://artifacthub.io/packages/helm/metrics-server/metrics-server
