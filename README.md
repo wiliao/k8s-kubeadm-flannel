@@ -84,17 +84,6 @@ If you use custom podCIDR (not 10.244.0.0/16), you first need to download the fo
 ![screen-shot-k8s-flannel-pods](screen-shot/flannel-two-nodes.png)
 
 
-
-### (4). Remove the taints on the control plane so that you can schedule pods on it.
-
-    kubectl taint nodes --all node-role.kubernetes.io/control-plane-
-
-    kubectl get nodes -o wide
-
-![screen-shot-k8s-taint-node](screen-shot/untaint-control-plane.png)
-
-![screen-shot-k8s-pods-on-master](screen-shot/pods-on-control-plane.png)
-
 ## 7. Joining worker node
 
 After initializing control plane, it would show the following statement with actual values:
@@ -105,7 +94,17 @@ For example,
 
 ![screen-shot-k8s-calico-pods](screen-shot/flannel-join-node.png)
 
-## 8. Installing Metrics Server using Helm charts
+## 8. Remove the taints on the control plane so that you can schedule pods on it.
+
+    kubectl taint nodes --all node-role.kubernetes.io/control-plane-
+
+    kubectl get nodes -o wide
+
+![screen-shot-k8s-taint-node](screen-shot/untaint-control-plane.png)
+
+![screen-shot-k8s-pods-on-master](screen-shot/pods-on-control-plane.png)
+
+## 9. Installing Metrics Server using Helm charts
 
 (1). Installing Helm
 
@@ -128,7 +127,7 @@ For example,
 
 ![screen-shot-k8s-taint-node](screen-shot/helm-metrics-server.png)
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 ### (1). Cann't join node
 
@@ -167,14 +166,16 @@ For worker nodes, we don’t need to install kube-apiserver but need to copy the
 
 &nbsp;
 
-## 10. References
+## 11. References
 
 https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/
 
 https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/
 
+https://github.com/flannel-io/flannel#deploying-flannel-manually
+
 https://helm.sh/docs/intro/install/
 
 https://artifacthub.io/packages/helm/metrics-server/metrics-server
 
-https://github.com/flannel-io/flannel#deploying-flannel-manually
+
