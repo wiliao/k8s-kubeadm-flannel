@@ -89,8 +89,6 @@ If you use custom podCIDR (not 10.244.0.0/16), you first need to download the fo
 
     kubectl taint nodes --all node-role.kubernetes.io/control-plane-
 
-    kubectl taint nodes --all node-role.kubernetes.io/master-
-
     kubectl get nodes -o wide
 
 ![screen-shot-k8s-taint-node](screen-shot/untaint-control-plane.png)
@@ -178,3 +176,5 @@ https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-clu
 https://helm.sh/docs/intro/install/
 
 https://artifacthub.io/packages/helm/metrics-server/metrics-server
+
+https://github.com/flannel-io/flannel#deploying-flannel-manually
