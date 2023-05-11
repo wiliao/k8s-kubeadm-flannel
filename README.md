@@ -119,7 +119,7 @@ For example,
     sudo apt-get update
     sudo apt-get install helm
 
-(2). Add the Metrics Server Helm charts repo to Helm and then install (if using tls)
+(2). Add the Metrics Server Helm charts repo to Helm and then install (if using tls, might need other steps)
 
     helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
 
@@ -145,6 +145,8 @@ For example,
 
 (3). Uninstall metrics server
 
+If installed directly from YAML manifest:
+
     kubectl delete service/metrics-server -n  kube-system
     kubectl delete deployment.apps/metrics-server  -n  kube-system
     kubectl delete apiservices.apiregistration.k8s.io v1beta1.metrics.k8s.io
@@ -154,6 +156,10 @@ For example,
     kubectl delete clusterrolebinding system:metrics-server          
     kubectl delete rolebinding metrics-server-auth-reader -n kube-system 
     kubectl delete serviceaccount metrics-server -n kube-system
+
+If installed using helm:
+
+    kubectl delete namespace metrics-server
 
 ## 10. Troubleshooting
 
