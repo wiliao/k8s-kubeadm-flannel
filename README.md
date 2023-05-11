@@ -108,24 +108,47 @@ For example,
 
 (1). Installing Helm
 
-    curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+    sudo curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
     sudo apt-get install apt-transport-https --yes
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
     sudo apt-get update
     sudo apt-get install helm
 
-(2). Add the Metrics Server Helm charts repo to Helm and then install
+(2). Add the Metrics Server Helm charts repo to Helm and then install (if using tls)
 
-    kubectl create ns metrics-server
-    kubectl config set-context $(kubectl config current-context) --namespace=metrics-server
     helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
-    helm upgrade
-    helm show values metrics-server/metrics-server > ~/metrics-server.values
-    helm install metrics-server metrics-server/metrics-server -n  metrics-server --values ~/metrics-server.values
-    helm ls -n metrics-server
+
+    helm upgrade --install metrics-server metrics-server/metrics-server
     
 
 ![screen-shot-k8s-taint-node](screen-shot/helm-metrics-server.png)
+
+(3). Download components.yaml and modify to use insecure tls and then install, remember to enable port 4443 on all the nodes
+
+    wget https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+    nano components.yaml
+
+    sudo ufw allow 4443
+    sudo ufw allow 4443/tcp
+
+    kubectl apply -f components.yaml
+
+![screen-shot-k8s-taint-node](screen-shot/modified-metrics-server-components-yaml.png)
+
+![screen-shot-k8s-taint-node](screen-shot/metrics-server-running.png)
+
+(3). Uninstall metrics server
+
+    kubectl delete service/metrics-server -n  kube-system
+    kubectl delete deployment.apps/metrics-server  -n  kube-system
+    kubectl delete apiservices.apiregistration.k8s.io v1beta1.metrics.k8s.io
+    kubectl delete clusterroles.rbac.authorization.k8s.io system:aggregated-metrics-reader
+    kubectl delete clusterroles.rbac.authorization.k8s.io system:metrics-server 
+    kubectl delete clusterrolebinding metrics-server:system:auth-delegator
+    kubectl delete clusterrolebinding system:metrics-server          
+    kubectl delete rolebinding metrics-server-auth-reader -n kube-system 
+    kubectl delete serviceaccount metrics-server -n kube-system
 
 ## 10. Troubleshooting
 
@@ -166,6 +189,15 @@ For worker nodes, we don’t need to install kube-apiserver but need to copy the
 
 &nbsp;
 
+### (4). metrics server not working on worker node (Metrics API not available)
+
+&nbsp;
+
+To fix it, modify components.yaml to set "hostNetwork" to true and add "kubelet-insecure-tls" and enable port 4443 on worker node where metrics server is running.
+
+&nbsp;
+
+
 ## 11. References
 
 https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/
@@ -178,4 +210,5 @@ https://helm.sh/docs/intro/install/
 
 https://artifacthub.io/packages/helm/metrics-server/metrics-server
 
+https://github.com/kubernetes-sigs/metrics-server
 
