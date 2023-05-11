@@ -78,10 +78,15 @@ If you use custom podCIDR (not 10.244.0.0/16), you first need to download the fo
 
 ![screen-shot-k8s-ssh-pod-on-worker-node](screen-shot/enable-10250-on-worker-node.png)
 
+Please refer to the default ports and protocols:
 
-### (3). Confirm that all of the pods are running with the following command
+![screen-shot-k8s-ports-and-protocols](screen-shot/ports-and-protocols.png)
 
-![screen-shot-k8s-flannel-pods](screen-shot/flannel-two-nodes.png)
+### (3). Confirm that all of the pods are running
+
+    kubectl get pods --all-namespaces --output wide
+
+![screen-shot-k8s-flannel-two-pods](screen-shot/flannel-two-nodes.png)
 
 
 ## 7. Joining worker node
@@ -92,9 +97,9 @@ After initializing control plane, it would show the following statement with act
 
 For example,
 
-![screen-shot-k8s-calico-pods](screen-shot/flannel-join-node.png)
+![screen-shot-k8s-flannel-joining-pods](screen-shot/flannel-join-node.png)
 
-## 8. Remove the taints on the control plane so that you can schedule pods on it.
+## 8. Remove the taints on control plane so as to schedule pods on it.
 
     kubectl taint nodes --all node-role.kubernetes.io/control-plane-
 
@@ -104,7 +109,7 @@ For example,
 
 ![screen-shot-k8s-pods-on-master](screen-shot/pods-on-control-plane.png)
 
-## 9. Installing Metrics Server using Helm charts
+## 9. Installing Metrics Server
 
 (1). Installing Helm
 
@@ -134,9 +139,9 @@ For example,
 
     kubectl apply -f components.yaml
 
-![screen-shot-k8s-taint-node](screen-shot/modified-metrics-server-components-yaml.png)
+![screen-shot-metrics-srv-component](screen-shot/modified-metrics-server-components-yaml.png)
 
-![screen-shot-k8s-taint-node](screen-shot/metrics-server-running.png)
+![screen-shot-k8s-metrics-srv-running](screen-shot/metrics-server-running.png)
 
 (3). Uninstall metrics server
 
@@ -185,7 +190,7 @@ E0427 22:03:20.933445   98616 memcache.go:265] couldn't get current server API g
 
 Kubcetl is by default configured and working on the master. It requires a kube-apiserver pod and ~/.kube/config.
 
-For worker nodes, we don’t need to install kube-apiserver but need to copy the ~/.kube/config file from the master node to the ~/.kube/config on the worker node so that it can call kube-apiserver at https://10.0.0.10:6443.
+For worker nodes, we don’t need to install kube-apiserver but need to copy the ~/.kube/config file from the master node to the ~/.kube/config on the worker node so that it can call kube-apiserver at https://10.0.0.230:6443.
 
 &nbsp;
 
@@ -212,3 +217,4 @@ https://artifacthub.io/packages/helm/metrics-server/metrics-server
 
 https://github.com/kubernetes-sigs/metrics-server
 
+https://kubernetes.io/docs/reference/networking/ports-and-protocols/
