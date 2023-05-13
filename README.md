@@ -109,6 +109,14 @@ For example,
 
 ![screen-shot-k8s-pods-on-master](screen-shot/pods-on-control-plane.png)
 
+Confirm that the pod network is working by pinging from one pod (sleep-1) to another (sleep-2):
+
+![screen-shot-k8s-pods-on-master](screen-shot/ping-pod-to-verify-pod-network.png)
+
+K8s service does not support ICMP protocol, so it failed to ping service "sleep-2":
+
+![screen-shot-k8s-pods-on-master](screen-shot/failed-to-ping-service.png)
+
 ## 9. Installing Metrics Server
 
 (1). Installing Helm
@@ -224,3 +232,5 @@ https://artifacthub.io/packages/helm/metrics-server/metrics-server
 https://github.com/kubernetes-sigs/metrics-server
 
 https://kubernetes.io/docs/reference/networking/ports-and-protocols/
+
+https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
