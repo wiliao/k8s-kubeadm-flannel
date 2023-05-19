@@ -42,24 +42,32 @@ Restart machine after executing the above commands.
 
     sudo kubeadm reset
 
+    sudo rm -r /etc/cni/net.d
+
+    sudo rm -r /etc/kubernetes
+
     sudo apt-get purge kubeadm kubectl kubelet kubernetes-cni kube*   
 
     sudo apt-get autoremove  
 
     sudo rm -rf ~/.kube
 
+    sudo reboot
+
 ## 5. Create a single-host Kubernetes cluster with kubeadm (to use default pod network ip range for flannel: podCIDR=10.244.0.0/16)
 
 Note: The --pod-network-cidr=10.244.0.0/16 option is a requirement for Flannel - don't change that network address!
 
 
-    sudo kubeadm init --apiserver-advertise-address=10.0.0.230 --pod-network-cidr=10.244.0.0/16
+    sudo kubeadm init --apiserver-advertise-address=192.168.0.192 --pod-network-cidr=10.244.0.0/16
 
     mkdir -p $HOME/.kube
 
     sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 
     sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+Please refer to output-of-kubeadm-ini.txt for the command to join worker node.
 
 ## 6. Install Flannel
 
@@ -90,6 +98,12 @@ Please refer to the default ports and protocols:
 
 
 ## 7. Joining worker node
+
+If needed, clean up work node first:
+
+    sudo kubeadm reset
+    sudo rm -r /etc/cni/net.d
+    sudo reboot
 
 After initializing control plane, it would show the following statement with actual values:
 
