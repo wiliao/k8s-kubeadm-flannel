@@ -44,8 +44,6 @@ Restart machine after executing the above commands.
 
     sudo rm -r /etc/cni/net.d
 
-    sudo rm -r /etc/kubernetes
-
     sudo apt-get purge kubeadm kubectl kubelet kubernetes-cni kube*   
 
     sudo apt-get autoremove  
@@ -59,7 +57,7 @@ Restart machine after executing the above commands.
 Note: The --pod-network-cidr=10.244.0.0/16 option is a requirement for Flannel - don't change that network address!
 
 
-    sudo kubeadm init --apiserver-advertise-address=192.168.0.192 --pod-network-cidr=10.244.0.0/16
+    sudo kubeadm init --apiserver-advertise-address=10.0.0.230 --pod-network-cidr=10.244.0.0/16
 
     mkdir -p $HOME/.kube
 
@@ -67,7 +65,7 @@ Note: The --pod-network-cidr=10.244.0.0/16 option is a requirement for Flannel -
 
     sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-Please refer to output-of-kubeadm-ini.txt for the command to join worker node.
+Please refer to output-of-kubeadm-ini.txt as an example for the command to join worker node.
 
 ## 6. Install Flannel
 
@@ -133,7 +131,7 @@ K8s service does not support ICMP protocol, so it failed to ping service "sleep-
 
 ## 9. Installing Metrics Server
 
-(1). Installing Helm
+(1). Installing Helm if not yet
 
     sudo curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
     sudo apt-get install apt-transport-https --yes
@@ -150,7 +148,7 @@ K8s service does not support ICMP protocol, so it failed to ping service "sleep-
 
 ![screen-shot-k8s-taint-node](screen-shot/helm-metrics-server.png)
 
-(3). Download components.yaml and modify to use insecure tls and then install, remember to enable port 4443 on all the nodes
+(3). Download components.yaml and modify it to add hostNetwork and use insecure tls and then install, remember to enable port 4443 on all the nodes
 
     wget https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 
@@ -160,6 +158,9 @@ K8s service does not support ICMP protocol, so it failed to ping service "sleep-
     sudo ufw allow 4443/tcp
 
     kubectl apply -f components.yaml
+
+    kubectl get pods --all-namespaces -o wide
+    kubectl top node
 
 ![screen-shot-metrics-srv-component](screen-shot/modified-metrics-server-components-yaml.png)
 
